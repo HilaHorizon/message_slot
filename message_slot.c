@@ -22,32 +22,30 @@ MODULE_LICENSE("GPL");
 
 /**
  * Channel structure - represents a single message channel within a message slot
- * Each channel stores exactly one message (the last one written)
  */
 struct channel {
-    unsigned int channel_id;    // The channel identifier (non-zero)
-    char *message_data;         // Pointer to the stored message content
-    int message_length;         // Length of the stored message (1-128 bytes)
-    struct channel *next;       // Next channel in the linked list
+    unsigned int channel_id;
+    char *message_data;
+    int message_length;
+    struct channel *next;
 };
 
 /**
  * Message slot structure - represents one message slot device file
- * Identified by its minor number, contains multiple channels
  */
 struct message_slot {
-    int minor_number;           // Device minor number (0-255)
-    struct channel *channels;   // Head of the channels linked list
+    int minor_number;         
+    struct channel *channels;   
 };
 
 /**
  * File descriptor context - stores per-fd state
- * Allocated in device_open() and stored in file->private_data
+ * stored in file->private_data
  */
 struct msg_slot_fd {
-    unsigned int channel_id;        // Currently selected channel ID (0 = none set)
+    unsigned int channel_id;
     int censorship_enabled;         // Censorship mode: 0 = disabled, 1 = enabled
-    struct message_slot *slot;      // Pointer to the associated message slot
+    struct message_slot *slot;
 };
 
 static struct message_slot* message_slots[MAX_SLOTS];
@@ -60,7 +58,7 @@ static int device_open(struct inode *inode, struct file *file) {
   int minor;
 
   minor = iminor(inode);
-  // Validate minor number (should be 0-255)
+  // Validate minor number
   if (minor < 0 || minor >= MAX_SLOTS) {
       printk(KERN_ERR "message_slot: invalid minor number %d\n", minor);
       return -EINVAL;
@@ -80,7 +78,6 @@ static int device_open(struct inode *inode, struct file *file) {
       message_slots[minor]->minor_number = minor;
       message_slots[minor]->channels = NULL;
         
-      printk(KERN_INFO "message_slot: created new message slot with minor %d\n", minor);
     }
 
   fd_data = kmalloc(sizeof(struct msg_slot_fd), GFP_KERNEL);
@@ -96,8 +93,6 @@ static int device_open(struct inode *inode, struct file *file) {
   fd_data->slot = message_slots[minor];
   fd_data->censorship_enabled = 0;
   file->private_data = fd_data;
-
-  printk(KERN_DEBUG "message_slot: opened device file with minor %d\n", minor);
 
   return SUCCESS;
 }
@@ -149,7 +144,6 @@ static struct channel* create_channel(struct message_slot *slot, unsigned int ch
     new_channel->next = slot->channels;
     slot->channels = new_channel;
     
-    printk(KERN_DEBUG "message_slot: created channel %u\n", channel_id);
     return new_channel;
 }
 //---------------------------------------------------------------
@@ -252,9 +246,7 @@ static ssize_t device_write(struct file *file, const char __user *buffer,
     // Store new message
     chan->message_data = new_message;
     chan->message_length = length;
-    
-    printk(KERN_DEBUG "message_slot: wrote %zu bytes to channel %u\n", 
-           length, fd_data->channel_id);
+
     
     return length;
 }
@@ -309,9 +301,6 @@ static ssize_t device_read(struct file *file, char __user *buffer,
         return -EFAULT;
     }
     
-    printk(KERN_DEBUG "message_slot: read %d bytes from channel %u\n", 
-           message_length, fd_data->channel_id);
-    
     return message_length;
 
 }
@@ -339,7 +328,6 @@ static long device_ioctl(struct file *file, unsigned int ioctl_command_id,
           }
             
           fd_data->channel_id = param;
-          printk(KERN_DEBUG "message_slot: set channel id to %u\n", param);
           break;
             
       case MSG_SLOT_SET_CEN:
@@ -350,8 +338,6 @@ static long device_ioctl(struct file *file, unsigned int ioctl_command_id,
           }
             
           fd_data->censorship_enabled = (int)param;
-          printk(KERN_DEBUG "message_slot: set censorship to %s\n", 
-                   param ? "enabled" : "disabled");
           break;
             
       default:
