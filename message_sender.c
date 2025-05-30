@@ -27,16 +27,13 @@ int main(int argc, char *argv[]) {
   message_data=argv[4];
   message_length=strlen(message_data);
 
-  if (!message_data || message_length==0){
-    perror("no message sent from user in message sender\n");
-    exit(1);
-  }
 
   file_desc = open(slot_file_path, O_RDWR);
   if (file_desc < 0) {
     perror("Can't open device file in message sender \n");
     exit(1);
   }
+  
   ret_val = ioctl(file_desc, MSG_SLOT_SET_CEN, censorship_mode);
   if (ret_val<0){
     perror("ioctl MSG_SLOT_SET_CEN error in message sender\n");
