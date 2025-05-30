@@ -52,7 +52,6 @@ int main(int argc, char *argv[]) {
       close(file_desc);
       exit(1);
   }
-  write(STDOUT_FILENO, "\n", 1); 
 
   return 0;
 }
