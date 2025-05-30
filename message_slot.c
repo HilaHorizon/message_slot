@@ -20,11 +20,6 @@ MODULE_LICENSE("GPL");
 #include "message_slot.h"
 
 
-// struct chardev_info {
-//   spinlock_t lock;
-// };
-
-
 /**
  * Channel structure - represents a single message channel within a message slot
  * Each channel stores exactly one message (the last one written)
@@ -58,29 +53,9 @@ struct msg_slot_fd {
 static struct message_slot* message_slots[MAX_SLOTS];
 
 
-// used to prevent concurent access into the same device
-// static int dev_open_flag = 0; // for spinlock
-
-// static struct chardev_info device_info;
-
-
 
 //================== DEVICE FUNCTIONS ===========================
 static int device_open(struct inode *inode, struct file *file) {
-  // unsigned long flags; // for spinlock
-  // printk("Invoking device_open(%p)\n", file);
-
-  // // We don't want to talk to two processes at the same time
-  // spin_lock_irqsave(&device_info.lock, flags);
-  // if (1 == dev_open_flag) {
-  //   spin_unlock_irqrestore(&device_info.lock, flags);
-  //   return -EBUSY;
-  // }
-
-  // ++dev_open_flag;
-  // spin_unlock_irqrestore(&device_info.lock, flags);
-
-
   struct msg_slot_fd *fd_data;
   int minor;
 
@@ -130,14 +105,6 @@ static int device_open(struct inode *inode, struct file *file) {
 //---------------------------------------------------------------
 
 static int device_release(struct inode *inode, struct file *file) {
-  // unsigned long flags; // for spinlock
-  // printk("Invoking device_release(%p,%p)\n", inode, file);
-
-  // // ready for our next caller
-  // spin_lock_irqsave(&device_info.lock, flags);
-  // --dev_open_flag;
-  // spin_unlock_irqrestore(&device_info.lock, flags);
-
   kfree(file->private_data);
   return SUCCESS;
 }
@@ -413,9 +380,6 @@ struct file_operations Fops = {
 // Initialize the module - Register the character device
 static int __init simple_init(void) {
   int rc = -1;
-  // init dev struct
-  // memset(&device_info, 0, sizeof(struct chardev_info));
-  // spin_lock_init(&device_info.lock); // for spinlock
 
   // Register driver capabilities. Obtain major num
   rc = register_chrdev(MAJOR_NUM, DEVICE_RANGE_NAME, &Fops);
